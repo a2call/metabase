@@ -1,7 +1,6 @@
 (ns metabase.models.database
   (:require [cheshire.generate :refer [add-encoder encode-map]]
             [korma.core :as k]
-            [metabase.api.common :refer [*current-user*]]
             [metabase.db :refer [cascade-delete sel]]
             [metabase.models.interface :as i]
             [metabase.util :as u]))
@@ -37,13 +36,3 @@
           :can-write?         i/superuser?
           :post-select        post-select
           :pre-cascade-delete pre-cascade-delete}))
-
-
-(add-encoder DatabaseInstance (fn [db json-generator]
-                                (encode-map (cond
-                                              (not (:is_superuser @*current-user*)) (dissoc db :details)
-                                              (get-in db [:details :password])      (assoc-in db [:details :password] protected-password)
-                                              :else                                 db)
-                                            json-generator)))
-
-(u/require-dox-in-this-namespace)

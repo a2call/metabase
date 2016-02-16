@@ -5,9 +5,6 @@
   :description "Metabase Community Edition"
   :url "http://metabase.com/"
   :min-lein-version "2.5.0"
-  :aliases {"bikeshed" ["with-profile" "+bikeshed" "bikeshed" "--max-line-length" "240"]
-            "test" ["with-profile" "+expectations" "expectations"]
-            "generate-sample-dataset" ["with-profile" "+generate-sample-dataset" "run"]}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.async "0.2.374"]
                  [org.clojure/core.match "0.3.0-alpha4"]              ; optimized pattern matching library for Clojure
@@ -73,12 +70,10 @@
                                :unused-ret-vals]}                     ; gives too many false positives for functions with side-effects like conj!
   :profiles {:dev {:dependencies [[org.clojure/tools.nrepl "0.2.12"]  ; REPL <3
                                   [org.clojure/tools.reader "0.10.0"] ; Need to explictly specify this dep otherwise expectations doesn't seem to work right :'(
-                                  [expectations "2.1.3"]              ; unit tests
                                   [ring/ring-mock "0.3.0"]]
                    :plugins [[jonase/eastwood "0.2.3"]                ; Linting
                              [lein-ancient "0.6.8"]                   ; Check project for outdated dependencies + plugins w/ 'lein ancient'
                              [lein-bikeshed "0.2.0"]                  ; Linting
-                             [lein-expectations "0.0.8"]              ; run unit tests with 'lein expectations'
                              [lein-instant-cheatsheet "2.1.4"]        ; use awesome instant cheatsheet created by yours truly w/ 'lein instant-cheatsheet'
                              [michaelblume/lein-marginalia "0.9.0"]]  ; generate documentation with 'lein marg'
                    :env {:mb-run-mode "dev"}
@@ -87,29 +82,5 @@
                               "-Xmx2048m"                             ; hard limit of 2GB so we stop hitting the 4GB container limit on CircleCI
                               "-XX:+CMSClassUnloadingEnabled"         ; let Clojure's dynamically generated temporary classes be GC'ed from PermGen
                               "-XX:+UseConcMarkSweepGC"]}             ; Concurrent Mark Sweep GC needs to be used for Class Unloading (above)
-             :expectations {:injections [(require 'metabase.test-setup)]
-                            :resource-paths ["test_resources"]
-                            :env {:mb-test-setting-1 "ABCDEFG"
-                                  :mb-run-mode "test"}
-                            :jvm-opts ["-Dmb.db.in.memory=true"
-                                       "-Dmb.jetty.join=false"
-                                       "-Dmb.jetty.port=3010"
-                                       "-Dmb.api.key=test-api-key"
-                                       "-Xverify:none"]}              ; disable bytecode verification when running tests so they start slightly faster
              :uberjar {:aot :all
-                       :jvm-opts ["-Dclojure.compiler.elide-meta=[:doc :added :file :line]", "-Dclojure.compiler.direct-linking=true"]}
-             :generate-sample-dataset {:dependencies [[faker "0.2.2"]                   ; Fake data generator -- port of Perl/Ruby
-                                                      [incanter/incanter-core "1.9.0"]] ; Satistical functions like normal distibutions}})
-                                       :source-paths ["sample_dataset"]
-                                       :main ^:skip-aot metabase.sample-dataset.generate}
-             ;; Run reset password from source: MB_DB_PATH=/path/to/metabase.db lein with-profile reset-password run email@address.com
-             ;; Create the reset password JAR:  lein with-profile reset-password jar
-             ;;                                   -> ./reset-password-artifacts/reset-password/reset-password.jar
-             ;; Run the reset password JAR:     MB_DB_PATH=/path/to/metabase.db java -classpath /path/to/metabase-uberjar.jar:/path/to/reset-password.jar \
-             ;;                                   metabase.reset_password.core email@address.com
-             :reset-password {:source-paths ["reset_password"]
-                              :main metabase.reset-password.core
-                              :jar-name "reset-password.jar"
-                              ;; Exclude everything except for reset-password specific code in the created jar
-                              :jar-exclusions [#"^(?!metabase/reset_password).*$"]
-                              :target-path "reset-password-artifacts/%s"}}) ; different than ./target because otherwise lein uberjar will delete our artifacts and vice versa
+                       :jvm-opts ["-Dclojure.compiler.elide-meta=[:doc :added :file :line]", "-Dclojure.compiler.direct-linking=true"]}})

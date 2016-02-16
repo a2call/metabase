@@ -1,7 +1,6 @@
 (ns metabase.models.segment
   (:require [korma.core :as k]
             [metabase.db :as db]
-            [metabase.events :as events]
             (metabase.models [common :refer [perms-readwrite]]
                              [hydrate :refer :all]
                              [interface :as i]
@@ -70,7 +69,7 @@
                   :description description
                   :is_active   true
                   :definition  definition)]
-    (-> (events/publish-event :segment-create segment)
+    (-> #_(events/publish-event :segment-create segment)
         (hydrate :creator))))
 
 (defn exists-segment?
@@ -117,7 +116,7 @@
     :definition  definition)
   (let [segment (retrieve-segment id)]
     ;; fire off an event
-    (events/publish-event :segment-update (assoc segment :actor_id user-id :revision_message revision_message))
+    #_(events/publish-event :segment-update (assoc segment :actor_id user-id :revision_message revision_message))
     ;; return the updated segment
     segment))
 
@@ -137,6 +136,6 @@
   ;; retrieve the updated segment (now retired)
   (let [segment (retrieve-segment id)]
     ;; fire off an event
-    (events/publish-event :segment-delete (assoc segment :actor_id user-id :revision_message revision-message))
+    #_(events/publish-event :segment-delete (assoc segment :actor_id user-id :revision_message revision-message))
     ;; return the updated segment
     segment))

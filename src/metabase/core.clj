@@ -16,12 +16,9 @@
             (metabase [config :as config]
                       [db :as db]
                       [driver :as driver]
-                      [events :as events]
                       [middleware :as mb-middleware]
                       [routes :as routes]
-                      [sample-data :as sample-data]
                       [setup :as setup]
-                      [task :as task]
                       [util :as u])
             (metabase.models [setting :refer [defsetting]]
                              [database :refer [Database]]
@@ -62,8 +59,6 @@
       wrap-json-response                 ; middleware to automatically serialize suitable objects as JSON in responses
       wrap-keyword-params                ; converts string keys in :params to keyword keys
       wrap-params                        ; parses GET and POST params as :query-params/:form-params and both as :params
-      mb-middleware/bind-current-user    ; Binds *current-user* and *current-user-id* if :metabase-user-id is non-nil
-      mb-middleware/wrap-current-user-id ; looks for :metabase-session-id and sets :metabase-user-id if Session ID is valid
       mb-middleware/wrap-api-key         ; looks for a Metabase API Key on the request and assocs as :metabase-api-key
       mb-middleware/wrap-session-id      ; looks for a Metabase Session ID and assoc as :metabase-session-id
       wrap-cookies                       ; Parses cookies in the request map and assocs as :cookies
@@ -107,10 +102,7 @@
 
 (defn destroy
   "General application shutdown function which should be called once at application shuddown."
-  []
-  (log/info "Metabase Shutting Down ...")
-  (task/stop-scheduler!)
-  (log/info "Metabase Shutdown COMPLETE"))
+  [])
 
 (defn init!
   "General application initialization function which should be run once at application startup."
@@ -135,27 +127,16 @@
   (let [new-install (not (db/exists? User))]
 
     ;; Bootstrap the event system
-    (events/initialize-events!)
     (reset! metabase-initialization-progress 0.7)
 
     ;; Now start the task runner
-    (task/start-scheduler!)
     (reset! metabase-initialization-progress 0.8)
 
     (when new-install
       (log/info "Looks like this is a new installation ... preparing setup wizard")
       ;; create setup token
-      (-init-create-setup-token)
-      ;; publish install event
-      (events/publish-event :install {}))
-    (reset! metabase-initialization-progress 0.9)
-
-    ;; deal with our sample dataset as needed
-    (if new-install
-      ;; add the sample dataset DB for fresh installs
-      (sample-data/add-sample-dataset!)
-      ;; otherwise update if appropriate
-      (sample-data/update-sample-dataset-if-needed!)))
+      (-init-create-setup-token))
+    (reset! metabase-initialization-progress 0.9))
 
   (initialization-complete!)
   (log/info "Metabase Initialization COMPLETE"))

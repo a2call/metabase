@@ -12,13 +12,13 @@
   "Is `*current-user*` is a superuser? Ignores args.
    Intended for use as an implementation of `can-read?` and/or `can-write?`."
   [& _]
-  (:is_superuser @@(resolve 'metabase.api.common/*current-user*)))
+  false)
 
 (defn- creator?
   "Did the current user create OBJ?"
   [{:keys [creator_id], :as obj}]
   {:pre [creator_id]}
-  (= creator_id @(resolve 'metabase.api.common/*current-user-id*)))
+  false)
 
 (defn- publicly-?
   ([perms {:keys [public_perms], :as obj}]

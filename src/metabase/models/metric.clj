@@ -2,7 +2,6 @@
   (:require [korma.core :as k]
             [metabase.config :as config]
             [metabase.db :as db]
-            [metabase.events :as events]
             (metabase.models [common :refer [perms-readwrite]]
                              [dependency :as dependency]
                              [hydrate :refer :all]
@@ -85,8 +84,7 @@
                   :description description
                   :is_active   true
                   :definition  definition)]
-    (-> (events/publish-event :metric-create metric)
-        (hydrate :creator))))
+    (hydrate :creator)))
 
 (defn exists-metric?
   "Predicate function which checks for a given `Metric` with ID.
@@ -130,11 +128,7 @@
     :name        name
     :description description
     :definition  definition)
-  (let [metric (retrieve-metric id)]
-    ;; fire off an event
-    (events/publish-event :metric-update (assoc metric :actor_id user-id :revision_message revision_message))
-    ;; return the updated metric
-    metric))
+  (retrieve-metric id))
 
 (defn delete-metric
   "Delete a `Metric`.
@@ -150,8 +144,4 @@
   ;; make Metric not active
   (db/upd Metric id :is_active false)
   ;; retrieve the updated metric (now retired)
-  (let [metric (retrieve-metric id)]
-    ;; fire off an event
-    (events/publish-event :metric-delete (assoc metric :actor_id user-id :revision_message revision-message))
-    ;; return the updated metric
-    metric))
+  (retrieve-metric id))

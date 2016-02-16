@@ -6,7 +6,6 @@
                       [generate :refer [add-encoder encode-str encode-nil]])
             [korma.core :as k]
             [medley.core :refer [filter-vals map-vals]]
-            [metabase.api.common :refer [*current-user* *current-user-id*]]
             [metabase.config :as config]
             [metabase.db :refer [sel]]
             (metabase.models [interface :as models]
@@ -56,24 +55,6 @@
       (handler request))))
 
 
-(defn wrap-current-user-id
-  "Add `:metabase-user-id` to the request if a valid session token was passed."
-  [handler]
-  (fn [{:keys [metabase-session-id] :as request}]
-    ;; TODO - what kind of validations can we do on the sessionid to make sure it's safe to handle?  str?  alphanumeric?
-    (handler (or (when (and metabase-session-id ((resolve 'metabase.core/initialized?)))
-                   (when-let [session (first (k/select Session
-                                                       ;; NOTE: we join with the User table and ensure user.is_active = true
-                                                       (k/with User (k/where {:is_active true}))
-                                                       (k/fields :created_at :user_id)
-                                                       (k/where {:id metabase-session-id})))]
-                     (let [session-age-ms (- (System/currentTimeMillis) (.getTime ^java.util.Date (get session :created_at (java.util.Date. 0))))]
-                       ;; If the session exists and is not expired (max-session-age > session-age) then validation is good
-                       (when (and session (> (config/config-int :max-session-age) (quot session-age-ms 60000)))
-                         (assoc request :metabase-user-id (:user_id session))))))
-                 request))))
-
-
 (defn enforce-authentication
   "Middleware that returns a 401 response if REQUEST has no associated `:metabase-user-id`."
   [handler]
@@ -81,19 +62,6 @@
     (if metabase-user-id
       (handler request)
       response-unauthentic)))
-
-(defn bind-current-user
-  "Middleware that binds `metabase.api.common/*current-user*` and `*current-user-id*`
-
-   *  `*current-user-id*` int ID or nil of user associated with request
-   *  `*current-user*`    delay that returns current user (or nil) from DB"
-  [handler]
-  (fn [request]
-    (if-let [current-user-id (:metabase-user-id request)]
-      (binding [*current-user-id* current-user-id
-                *current-user*    (delay (sel :one `[User ~@(models/default-fields User) :is_active :is_staff], :id current-user-id))]
-        (handler request))
-      (handler request))))
 
 
 (defn wrap-api-key

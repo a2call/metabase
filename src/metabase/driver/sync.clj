@@ -12,7 +12,6 @@
             [metabase.driver :as driver]
             [metabase.driver.query-processor :as qp]
             [metabase.driver :as driver]
-            [metabase.events :as events]
             (metabase.models [common :as common]
                              [field :refer [Field] :as field]
                              [field-values :as field-values]
@@ -71,8 +70,7 @@
                        full-sync?
                        (:is_full_sync database))]
       (driver/sync-in-context driver database (fn []
-                                                (sync-database-active-tables! driver [table] :analyze? full-sync?)
-                                                (events/publish-event :table-sync {:table_id (:id table)}))))))
+                                                (sync-database-active-tables! driver [table] :analyze? full-sync?))))))
 
 
 ;;; ## ---------------------------------------- IMPLEMENTATION ----------------------------------------
@@ -251,7 +249,6 @@
   (let [start-time (System/nanoTime)
         tracking-hash (str (java.util.UUID/randomUUID))]
     (log/info (u/format-color 'magenta "Syncing %s database '%s'..." (name driver) (:name database)))
-    (events/publish-event :database-sync-begin {:database_id (:id database) :custom_id tracking-hash})
 
     (let [database-schema (driver/describe-database driver database)]
       ;; do some quick validations that our tables list is sensible
@@ -273,8 +270,6 @@
       (when-let [_metabase_metadata (first (filter #(= (s/lower-case (:name %)) "_metabase_metadata") (:tables database-schema)))]
         (sync-metabase-metadata-table! driver database _metabase_metadata)))
 
-    (events/publish-event :database-sync-end {:database_id (:id database) :custom_id tracking-hash :running_time (int (/ (- (System/nanoTime) start-time)
-                                                                                                                         1000000.0))}) ; convert to ms
     (log/info (u/format-color 'magenta "Finished syncing %s database '%s'. (%s)" (name driver) (:name database)
                               (u/format-nanoseconds (- (System/nanoTime) start-time))))))
 

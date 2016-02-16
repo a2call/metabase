@@ -58,12 +58,16 @@
         (field-id f))
     f))
 
+(println "OK! <-1>")
+
 (s/defn ^:ql ^:always-validate datetime-field :- FieldPlaceholder
   "Reference to a `DateTimeField`. This is just a `Field` reference with an associated datetime UNIT."
   ([f _ unit] (log/warn (u/format-color 'yellow (str "The syntax for datetime-field has changed in MBQL '98. [:datetime-field <field> :as <unit>] is deprecated. "
                                                      "Prefer [:datetime-field <field> <unit>] instead.")))
               (datetime-field f unit))
   ([f unit]   (assoc (field f) :datetime-unit (normalize-token unit))))
+
+(println "OK! <0>")
 
 (s/defn ^:ql ^:always-validate fk-> :- FieldPlaceholder
   "Reference to a `Field` that belongs to another `Table`. DEST-FIELD-ID is the ID of this Field, and FK-FIELD-ID is the ID of the foreign key field
@@ -353,6 +357,8 @@
 
 ;;; # ------------------------------------------------------------ Expansion ------------------------------------------------------------
 
+(println "OK!")
+
 ;; QL functions are any public function in this namespace marked with `^:ql`.
 (def ^:private token->ql-fn
   "A map of keywords (e.g., `:=`), to the matching vars (e.g., `#'=`)."
@@ -360,6 +366,8 @@
                  :let        [metta (meta varr)]
                  :when       (:ql metta)]
              {(keyword symb) varr})))
+
+(println "OK! <2>")
 
 (defn- fn-for-token
   "Return fn var that matches a token, or throw an exception.
@@ -456,3 +464,5 @@
 
 
 (u/require-dox-in-this-namespace)
+
+(println "OK! <3>")

@@ -5,7 +5,6 @@
                        [route :as route])
             [ring.util.response :as resp]
             [stencil.core :as stencil]
-            [metabase.api.routes :as api]
             [metabase.models.setting :as setting]))
 
 (defn- index [_]
@@ -20,7 +19,6 @@
 (defroutes routes
   (GET "/" [] index)                                     ; ^/$           -> index.html
   (GET "/favicon.ico" [] (resp/resource-response "frontend_client/favicon.ico"))
-  (context "/api" [] api/routes)                         ; ^/api/        -> API routes
   (context "/app" []
     (route/resources "/" {:root "frontend_client/app"})  ; ^/app/        -> static files under frontend_client/app
     (route/not-found {:status 404                        ; return 404 for anything else starting with ^/app/ that doesn't exist
